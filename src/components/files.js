@@ -1,95 +1,89 @@
-
 import React from 'react';
 import Buffer from 'safe-buffer';
 import IPFS from 'ipfs';
+import Dropzone from 'react-dropzone'
 
-const stringToUse = 'hello world from webpacked IPFS'
-
-class Files extends React.Component {
-  constructor (props) {
-    super(props)
+class FullScreen extends React.Component {
+  constructor() {
+    super()
     this.state = {
-      id: null,
-      version: null,
-      protocol_version: null,
-      added_file_hash: null,
-      added_file_contents: null
+      accept: '',
+      files: [],
+      dropzoneActive: false
     }
   }
-  componentDidMount () {
-    const self = this
-    let node
 
-    create()
-
-    function create () {
-      // Create the IPFS node instance
-
-      node = new IPFS({
-        repo: String(Math.random() + Date.now())
-      })
-
-      node.on('ready', () => {
-        console.log('IPFS node is ready')
-        ops()
-      })
-    }
-
-    function ops () {
-      node.id((err, res) => {
-        if (err) {
-          throw err
-        }
-        self.setState({
-          id: res.id,
-          version: res.agentVersion,
-          protocol_version: res.protocolVersion
-        })
-      })
-
-      node.files.add( "hello", (err, res) => {
-        if (err) {
-          throw err
-        }
-
-        const hash = res[0].hash
-        self.setState({added_file_hash: hash})
-
-        node.files.cat(hash, (err, res) => {
-          if (err) {
-            throw err
-          }
-          let data = ''
-          res.on('data', (d) => {
-            data = data + d
-          })
-          res.on('end', () => {
-            self.setState({added_file_contents: data})
-          })
-        })
-      })
-    }
+  onDragEnter() {
+    this.setState({
+      dropzoneActive: true
+    });
   }
-  render () {
+
+  onDragLeave() {
+    this.setState({
+      dropzoneActive: false
+    });
+  }
+
+  onDrop(files) {
+    this.setState({
+      files,
+      dropzoneActive: false
+    });
+  }
+
+  applyMimeTypes(event) {
+    this.setState({
+      accept: event.target.value
+    });
+  }
+
+
+
+  render() {
+    const { accept, files, dropzoneActive } = this.state;
+    const overlayStyle = {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      padding: '2.5em 0',
+      background: 'rgba(0,0,0,0.5)',
+      textAlign: 'center',
+      color: '#fff'
+    };
     return (
-      <div style={{textAlign: 'center'}}>
-        <h1>Everything is working!</h1>
-        <p>Your ID is <strong>{this.state.id}</strong></p>
-        <p>Your IPFS version is <strong>{this.state.version}</strong></p>
-        <p>Your IPFS protocol version is <strong>{this.state.protocol_version}</strong></p>
-        <hr />
+      <Dropzone
+        disableClick
+        style={{}}
+        accept={accept}
+        onDrop={this.onDrop.bind(this)}
+        onDragEnter={this.onDragEnter.bind(this)}
+        onDragLeave={this.onDragLeave.bind(this)}
+      >
+        { dropzoneActive && <div style={overlayStyle}>Drop files...</div> }
         <div>
-          Added a file! <br />
-          {this.state.added_file_hash}
+          <h1>My awesome app</h1>
+          <label htmlFor="mimetypes">Enter mime types you want to accept: </label>
+          <input
+            type="text"
+            id="mimetypes"
+            onChange={this.applyMimeTypes.bind(this)}
+          />
+
+          <h2>Dropped files</h2>
+          <ul>
+            {
+              files.map(f => <li>{f.name} - {f.size} bytes</li>)
+            }
+          </ul>
+
         </div>
-        <br />
-        <br />
-        <p>
-          Contents of this file: <br />
-          {this.state.added_file_contents}
-        </p>
-      </div>
-    )
+      </Dropzone>
+    );
   }
 }
-export default Files;
+
+<FullScreen />
+export default FullScreen;
